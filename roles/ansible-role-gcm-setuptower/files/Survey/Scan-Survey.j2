@@ -1,0 +1,147 @@
+{
+    "name": "",
+    "description": "",
+    "spec": [
+        {
+            "question_name": "ECM Customer Name",
+            "question_description": "Enter ECM Customer Name",
+            "required": true,
+            "type": "text",
+            "variable": "ecm_custname",
+            "min": 0,
+            "max": 1024,
+            "default": "{{ecm_custname}}",
+            "choices": "{{ecm_custname}}",
+            "new_question": true
+        },
+        {
+            "question_name": "ECM Customer ID",
+            "question_description": "Enter ECM Customer ID",
+            "required": false,
+            "type": "text",
+            "variable": "ecm_custid",
+            "min": 0,
+            "max": 1024,
+            "default": "{{ecm_custid}}",
+            "choices": "{{ecm_custid}}",
+            "new_question": true
+        },
+        {
+            "question_name": "Force Deploy",
+            "question_description": "Select Force Deploy Options (e.g pol)",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "force_deploy",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "pol\necm\nall",
+            "new_question": true
+        },
+        {
+            "question_name": "DEBUG Log Level",
+            "question_description": "Select to enable DEBUG Log Level",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "debug_log_level",
+            "min": null,
+            "max": null,
+            "default": "false",
+            "choices": "true\nfalse"
+        },
+        {
+            "question_name": "Gather Logs",
+            "question_description": "Select Gather Logs Options",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "gather_logs",
+            "min": null,
+            "max": null,
+            "default": "false",
+            "choices": "true\nfalse",
+            "new_question": true
+        },
+        {
+            "question_name": "Test scan",
+            "question_description": "Select to enable test scan",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "test_scan",
+            "min": null,
+            "max": null,
+            "default": "false",
+            "choices": "true\nfalse"
+        },
+        {
+            "question_name": "Scan options",
+            "question_description": "Select Option to Scan",
+            "required": false,
+            "type": "multiselect",
+            "variable": "scan_options",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "{{item.options}}"
+        },
+        {
+            "question_name": "Rule Options",
+            "question_description": "Please input the rule IDs, rule titles or rule names, separated by commas.",
+            "required": false,
+            "type": "text",
+            "variable": "rule_options",
+            "min": 0,
+            "max": 1024,
+            "default": "",
+            "choices": "",
+            "new_question": true
+        },
+        {
+            "question_name": "Disable Options",
+            "question_description": "Selection option to scan without local policy or exclude option",
+            "required": false,
+            "type": "multiselect",
+            "variable": "disable_options",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "LOCAL_POLICY\nEXCLUDE_SECTIONS\nOS_DETECTION\nPOLICY_PARAMETERS",
+            "new_question": true
+        },
+        {
+            "question_name": "ECM violation message limit",
+            "question_description": "Enter ECM limit size for violation message",
+            "required": false,
+            "type": "integer",
+            "variable": "ecm_message_limit",
+            "min": 1,
+            "max": 10000,
+            "default": 2000,
+            "choices": "",
+            "new_question": true
+        },
+        {
+            "question_name": "Initial Java heap size",
+            "question_description": "Enter initial Java heap size in megabytes",
+            "required": false,
+            "type": "integer",
+            "variable": "xms",
+            "min": 1,
+            "max": null,
+            "default": "",
+            "choices": "",
+            "new_question": true
+        },
+        {
+            "question_name": "Maximum Java heap size",
+            "question_description": "Enter maximum Java heap size in megabytes",
+            "required": false,
+            "type": "integer",
+            "variable": "xmx",
+            "min": 1,
+            "max": null,
+            "default": "",
+            "choices": "",
+            "new_question": true
+        }
+    ]
+}

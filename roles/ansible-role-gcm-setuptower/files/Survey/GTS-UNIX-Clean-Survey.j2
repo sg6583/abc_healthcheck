@@ -1,0 +1,41 @@
+{
+    "name": "",
+    "description": "",
+    "spec": [
+        {
+            "question_name": "Policy name",
+            "question_description": "Select Policy name",
+            "required": true,
+            "type": "multiselect",
+            "variable": "policy_names",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "All\nAIX-ITSS_CSD2\nApache-ITSSCSD\nCiscoIOS-ITSSCSD\nDB2-DB2Connect-ITSSCSD\nDB2-ITSSCSD\nDB2-SAP-ITSSCSD\nDocker-Container-ITSSCSD\nDocker-Engine-ITSSCSD\nDomino-ITSSCSD\nITM-ITSSCSD\nIntegration-Bus-ITSSCSD\nLinux-ITSSCSD\nLinux-ITSS_CSD2\nMQSERIES-ITSSCSD\nMySQL-ITSSCSD\nNetcool-Impact-ITSSCSD\nNetcool-Omnibus-ITSSCSD\nNetcool-WebGui-ITSSCSD\nOracle-ITSSCSD\nSAMBA-ITSSCSD\nSAP-HANA-ITSSCSD\nSAP-ITSSCSD\nSSH-ITSSCSD\nSUDO-ITSSCSD\nSolaris-ITSSCSD\nSpectrum-Protect-ITSSCSD\nSybase-ITSSCSD\nTADDM-DB-ITSSCSD\nTADDM-Domain-ITSSCSD\nTomcat-ITSSCSD\nVIOS-ITSSCSD\nWeblogic-ITSSCSD\nWebsphere-ITSS_CSD2\nWebsphere-Liberty-ITSSCSD\nipHMC-ITSSCSD\nzHMC-ITSSCSD"
+        },
+        {
+            "question_name": "Removal Options ",
+            "question_description": "Select Removal Options (e.g. all,hcl,jre,tools,ecm,policy_parameter,local_policy,pol)",
+            "required": false,
+            "type": "multiselect",
+            "variable": "removal_options",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "all\nhcl\njre\ntools\necm\npolicy_parameter\nlocal_policy\npol",
+            "new_question": true
+        },
+        {
+            "question_name": "Disable OS Detection",
+            "question_description": "Select option to Disable OS Detection",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "disable_os_detect",
+            "min": null,
+            "max": null,
+            "default": "false",
+            "choices": "true\nfalse",
+            "new_question": true
+        }
+    ]
+}

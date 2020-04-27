@@ -1,0 +1,6 @@
+---
+# vars file for Setting up GCM On Tower
+gcm_projects: [Linux_ITSSCSD-OS, Windows-OS]
+
+scm_base_url: "https://github.ibm.com/Continuous-Engineering"
+gcm_version: "v4.2.0"

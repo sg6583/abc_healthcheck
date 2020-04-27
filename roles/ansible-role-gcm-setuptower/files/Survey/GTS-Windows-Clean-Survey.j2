@@ -1,0 +1,41 @@
+{
+    "name": "",
+    "description": "",
+    "spec": [
+        {
+            "question_name": "Policy name",
+            "question_description": "Select Policy name",
+            "required": true,
+            "type": "multiselect",
+            "variable": "policy_names",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "All\nApache-ITSSCSD\nCitrixXen-ITSSCSD\nDB2-DB2Connect-ITSSCSD\nDB2-ITSSCSD\nDB2-SAP-ITSSCSD\nDomino-ITSSCSD\nESXi-ITSSCSD\nExchange2010-ITSSCSD\nExchange2013-ITSSCSD\nExchange2016-ITSSCSD\nIIS10-ITSSCSD\nIIS8-ITSSCSD\nITM-ITSSCSD\nIntegration-Bus-ITSSCSD\nMQSERIES-ITSSCSD\nMSSQL-ITSS_CSD2\nMySQL-ITSSCSD\nOracle-ITSSCSD\nRemotely-Anywhere-ITSS_CSD2\nSAP-ITSSCSD\nSSH-ITSSCSD\nSharepoint-ITSSCSD\nSpectrum-Protect-ITSSCSD\nSybase-ITSSCSD\nTerminalServer-ITSSCSD\nTomcat-ITSSCSD\nWeblogic-ITSSCSD\nWebsphere-ITSS_CSD2\nWebsphere-Liberty-ITSSCSD\nWindows-ITSSCSD\nWindows-ITSS_CSD2\nipHMC-ITSSCSD\nvCenter-Appliance-ITSSCSD\nvCenter-ITSSCSD\nzHMC-ITSSCSD"
+        },
+        {
+            "question_name": "Removal Options ",
+            "question_description": "Select Removal Options (e.g. all,hcl,jre,tools,ecm,policy_parameter,local_policy,pol)",
+            "required": false,
+            "type": "multiselect",
+            "variable": "removal_options",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "all\nhcl\njre\ntools\necm\npolicy_parameter\nlocal_policy\npol",
+            "new_question": true
+        },
+        {
+            "question_name": "Disable OS Detection",
+            "question_description": "Select option to Disable OS Detection",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "disable_os_detect",
+            "min": null,
+            "max": null,
+            "default": "false",
+            "choices": "true\nfalse",
+            "new_question": true
+        }
+    ]
+}

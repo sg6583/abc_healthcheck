@@ -1,0 +1,30 @@
+{
+    "name": "",
+    "description": "",
+    "spec": [
+        {
+            "question_name": "Force Deploy",
+            "question_description": "Select Force Deploy Options (e.g hcl,tools,jre,all)",
+            "required": false,
+            "type": "multiselect",
+            "variable": "force_deploy",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "hcl\njre\ntools\nall",
+            "new_question": true
+        },
+        {
+            "question_name": "Disable OS Detection",
+            "question_description": "Select Option to Disable OS Detection",
+            "required": false,
+            "type": "multiplechoice",
+            "variable": "disable_os_detect",
+            "min": null,
+            "max": null,
+            "default": "false",
+            "choices": "true\nfalse",
+            "new_question": true
+        }
+    ]
+}

@@ -1,0 +1,108 @@
+---
+- name: "Step 2: Connect to Tower Server..."
+  block:
+    - name: "Step 2: Set Tower Server Host..."
+      shell: "tower-cli config host {{tower_host}} &> /dev/null; tower-cli config host"
+      failed_when: false
+      changed_when: false
+      register: tower_host_config
+
+    - name: "Step 2: Set Tower Server USER..."
+      shell: "tower-cli config username {{tower_user}} &> /dev/null; tower-cli config username"
+      args:
+        executable: /bin/bash
+      failed_when: false
+      changed_when: false
+      register: tower_user_config
+
+    - name: "Step 2: Set Tower Server PWD..."
+      shell: "tower-cli config password {{tower_user_pwd}}"
+      failed_when: false
+      changed_when: false
+      no_log: true
+
+    - name: "Step 2: Set Tower Server SSL..."
+      shell: "tower-cli config verify_ssl {{verify_ssl}} &> /dev/null; tower-cli config verify_ssl"
+      failed_when: false
+      changed_when: false
+      register: tower_ssl_config
+      
+    - name: "Step 2: Set Tower output format to yaml..."
+      shell: "tower-cli config format yaml"
+      failed_when: false
+      changed_when: false
+  tags:
+    - config
+
+- debug:
+    msg:
+      - "{{ tower_host_config.stdout }}"
+      - "{{ tower_user_config.stdout }}"
+      - "{{ tower_ssl_config.stdout }}"
+
+- name: "Set variables"
+  set_fact:
+    gcm_branch: "{{gcm_version}}"
+    gcm_prj_version: "{{ gcm_version | replace('.','') }}"
+
+- name: "Include vars of policies_config.yaml into the 'policies_config' variable."
+  include_vars:
+    file: policies_config.yml
+    name: policies_config
+
+
+- name: "Step 4: Create GCM Calibration Project"
+  shell: tower-cli project create --name {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_calibration_project | lower}}_{{gcm_prj_version}} --organization {{blueid_shortcode}} --scm-type git --scm-branch {{gcm_branch}} --scm-credential {{scm_creds}} --scm-url {{scm_base_url}}/ansible-project-gts-cm-{{gcm_calibration_project|lower}}.git --scm-update-on-launch true
+  tags:
+    - config
+
+- name: "Step 5: Create directory for Surveys..."
+  file:
+    path: "{{survey_files_home}}/Survey"
+    state: directory
+
+- name: "Step 5: Copy Template Surveys..."
+  template:
+    src: "{{role_path}}/files/Survey/Calibration{{item.survey_prefix}}-Survey.j2"
+    dest: "{{survey_files_home}}/Survey/Calibration-Survey-{{item.name}}.json"
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects and item.name != 'Windows-OS'
+  tags:
+    - config
+
+- name: "Step 5: Copy Template Surveys for Windows-OS..."
+  template:
+    src: "{{role_path}}/files/Survey/Calibration-Windows-Survey.j2"
+    dest: "{{survey_files_home}}/Survey/Calibration-Survey-{{item}}.json"
+  loop: "{{ gcm_win_policies }}"
+  when: "'Windows-OS' in gcm_projects"
+  tags:
+    - config
+
+- name: "Step 5: Check calibration project sync status"
+  shell: tower-cli project status -n "{{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_calibration_project | lower}}_{{gcm_prj_version}}"
+  register: calibration_status
+  until: "calibration_status.stdout.find('status: successful') != -1"
+  retries: 100
+  delay: 10
+  tags:
+  - config
+
+- name: "Step 5: Create GCM Calibration Job Templates"
+  shell: tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_calibration_{{item.name | replace('-','_') | lower}}_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_calibration_project | lower}}_{{gcm_prj_version}} --playbook GCM-Send-{{item.name}}-Calibration.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/Calibration-Survey-{{item.name}}.json --survey-enabled true
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects and item.name != 'Windows-OS'
+  tags:
+    - config
+
+- name: "Step 5: Create GCM Calibration Job Templates for Windows"
+  shell: tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_calibration_{{item | replace('-','_') | lower}}_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_calibration_project | lower}}_{{gcm_prj_version}} --playbook GCM-Send-{{item}}-Calibration.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/Calibration-Survey-{{item}}.json --survey-enabled true
+  loop: "{{gcm_win_policies}}"
+  when: "'Windows-OS' in gcm_projects"
+  tags:
+    - config
+
+- name: "Step 6: Delete survey files"
+  file:
+    path: "{{survey_files_home}}/Survey"
+    state: absent

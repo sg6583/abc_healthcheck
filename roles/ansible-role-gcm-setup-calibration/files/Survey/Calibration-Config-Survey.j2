@@ -1,0 +1,78 @@
+{
+    "name": "",
+    "description": "",
+    "spec": [
+        {
+            "question_name": "Force Deploy",
+            "question_description": "Select Force Deploy Options",
+            "required": false,
+            "type": "multiselect",
+            "variable": "force_deploy",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "Local_Policy\nPolicy_Parameters\nExclude_Sections\nMiddleware_Configuration\nall",
+            "new_question": true
+        },
+        {
+            "question_name": "Custom Files",
+            "question_description": "Select Custom Files Options",
+            "required": false,
+            "type": "multiselect",
+            "variable": "custom_files",
+            "min": null,
+            "max": null,
+            "default": "",
+            "choices": "Local_Policy\nPolicy_Parameters\nExclude_Sections\nMiddleware_Configuration\nall",
+            "new_question": true
+        },
+        {
+            "question_name": "Local Policy Path",
+            "question_description": "Please input the local policy file path on git repo",
+            "required": false,
+            "type": "text",
+            "variable": "local_policy_path",
+            "min": 0,
+            "max": 1024,
+            "default": "templates/Calibrations/{{item.name}}/localpolicy.xml",
+            "choices": "",
+            "new_question": true
+        },
+        {
+            "question_name": "Exclude Sections Path",
+            "question_description": "Please input the exclude sections file path on git repo",
+            "required": false,
+            "type": "text",
+            "variable": "exclude_sections_path",
+            "min": 0,
+            "max": 1024,
+            "default": "templates/Calibrations/{{item.name}}/exclude_sections.txt",
+            "choices": "",
+            "new_question": true
+        },
+        {
+            "question_name": "Policy Parameters Path",
+            "question_description": "Please input the policy parameters file path on git repo",
+            "required": false,
+            "type": "text",
+            "variable": "policy_parameter_path",
+            "min": 0,
+            "max": 1024,
+            "default": "templates/Calibrations/{{item.name}}/policy_parameters.txt",
+            "choices": "",
+            "new_question": true
+        },
+        {
+            "question_name": "Middleware Config Path",
+            "question_description": "Please input the middleware config file path on git repo",
+            "required": false,
+            "type": "text",
+            "variable": "middleware_config_path",
+            "min": 0,
+            "max": 1024,
+            "default": "templates/Calibrations/{{item.name}}/{{item.config_name}}",
+            "choices": "",
+            "new_question": true
+        }
+    ]
+}

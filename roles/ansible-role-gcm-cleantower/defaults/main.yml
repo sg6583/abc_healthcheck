@@ -1,0 +1,14 @@
+---
+# defaults file for Setting up GCM On Tower
+#
+tower_host: ""
+tower_user: ""
+tower_user_pwd: ""
+verify_ssl: False
+scm_creds: ""
+gcm_support_project: "support"
+survey_files_home: /tmp
+system_user: awx
+system_group: awx
+projects_to_delete: [] 
+projects_to_save: []

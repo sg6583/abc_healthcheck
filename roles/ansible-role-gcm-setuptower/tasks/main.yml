@@ -1,0 +1,149 @@
+---
+- name: "Step 2: Check ecm_custid and ecm_custname variables"
+  fail: 
+    msg: "Variables ecm_custid or/and ecm_custname is undefined"
+  when: (ecm_custname is undefined)
+
+- name: "Step 2: Connect to Tower Server..."
+  block:
+    - name: "Step 2: Set Tower Server Host..."
+      shell: "tower-cli config host {{tower_host}} &> /dev/null; tower-cli config host"
+      failed_when: false
+      changed_when: false
+      register: tower_host_config
+
+    - name: "Step 2: Set Tower Server USER..."
+      shell: "tower-cli config username {{tower_user}} &> /dev/null; tower-cli config username"
+      args:
+        executable: /bin/bash
+      failed_when: false
+      changed_when: false
+      register: tower_user_config
+
+    - name: "Step 2: Set Tower Server PWD..."
+      shell: "tower-cli config password {{tower_user_pwd}}"
+      failed_when: false
+      changed_when: false
+      no_log: true
+
+    - name: "Step 2: Set Tower Server SSL..."
+      shell: "tower-cli config verify_ssl {{verify_ssl}} &> /dev/null; tower-cli config verify_ssl"
+      failed_when: false
+      changed_when: false
+      register: tower_ssl_config
+      
+    - name: "Step 2: Set Tower output format to yaml..."
+      shell: "tower-cli config format yaml"
+      failed_when: false
+      changed_when: false
+  tags:
+    - config
+
+- debug:
+    msg:
+      - "{{ tower_host_config.stdout }}"
+      - "{{ tower_user_config.stdout }}"
+      - "{{ tower_ssl_config.stdout }}"
+
+- name: "Set variables"
+  set_fact:
+    gcm_branch: "{{gcm_version}}"
+    gcm_prj_version: "{{ gcm_version | replace('.','') }}"
+
+- name: "Include vars of policies_config.yaml into the 'policies_config' variable."
+  include_vars:
+    file: policies_config.yml
+    name: policies_config
+
+- name: "Collect project names"
+  set_fact:
+    projects_to_create: "{{ projects_to_create|default([]) + [item.project]}}"
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects
+  tags:
+    - config
+
+- name: "Step 4: Create GCM Support Projects"
+  shell: tower-cli project create --name {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --organization {{blueid_shortcode}} --scm-type git --scm-branch {{gcm_branch}} --scm-credential {{scm_creds}} --scm-url {{scm_base_url}}/ansible-project-gts-cm-{{gcm_support_project|lower}}.git
+  tags:
+    - config
+
+- name: "Step 4: Create GCM Projects"
+  shell: tower-cli project create --name {{blueid_shortcode}}_project_healthscan_gts_cm_{{item | lower}}_{{gcm_prj_version}} --organization {{blueid_shortcode}} --scm-type git --scm-branch {{gcm_branch}} --scm-credential {{scm_creds}} --scm-url {{scm_base_url}}/ansible-project-gts-cm-{{item|lower}}.git
+  loop: "{{ projects_to_create | unique }}"
+  tags:
+    - config
+
+- name: "Step 5: Create directory for Surveys..."
+  file:
+    path: "{{survey_files_home}}/Survey"
+    state: directory
+
+- name: "Step 5: Copy Template Surveys..."
+  template:
+    src: "{{role_path}}/files/Survey/{{file.name}}.j2"
+    dest: "{{survey_files_home}}/Survey/{{file.name}}.json"
+    #owner: "{{system_user}}"
+    #group: "{{system_group}}"
+    #mode: 755
+  loop:
+    - name: GTS-UNIX-Clean-Survey
+    - name: GTS-UNIX-Prepare-Survey
+    - name: GTS-UNIX-Restore-Survey
+    - name: GTS-Windows-Clean-Survey
+    - name: GTS-Windows-Prepare-Survey
+    - name: GTS-Windows-Restore-Survey
+
+  loop_control:
+      loop_var: file
+
+- name: "Step 5: Copy Template Surveys..."
+  template:
+    src: "{{role_path}}/files/Survey/Scan-Survey.j2"
+    dest: "{{survey_files_home}}/Survey/Scan-Survey-{{item.name}}.json"
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects
+  tags:
+    - config
+
+- name: "Step 5: Check support project sync status"
+  shell: tower-cli project status -n "{{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}}"
+  register: support_status
+  until: "support_status.stdout.find('status: successful') != -1"
+  retries: 100
+  delay: 10
+  tags:
+  - config
+
+- name: "Step 5: Create GCM Prepare and Clean Job Templates"
+  shell: |
+    tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_prepare_unix_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --playbook GCM-Prepare-UNIX.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/GTS-UNIX-Prepare-Survey.json --survey-enabled true
+    tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_clean_unix_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --playbook GCM-Clean-UNIX.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/GTS-UNIX-Clean-Survey.json --survey-enabled true
+    tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_restore_unix_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --playbook GCM-Restore-UNIX.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/GTS-UNIX-Restore-Survey.json --survey-enabled true
+    tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_prepare_windows_{{gcm_prj_version}}  --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --playbook GCM-Prepare-Windows.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/GTS-Windows-Prepare-Survey.json --survey-enabled true
+    tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_clean_windows_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --playbook GCM-Clean-Windows.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/GTS-Windows-Clean-Survey.json --survey-enabled true
+    tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_restore_windows_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} --playbook GCM-Restore-Windows.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/GTS-Windows-Restore-Survey.json --survey-enabled true  
+  tags:
+    - config
+
+- name: "Step 5: Check project status"
+  shell: tower-cli project status -n "{{blueid_shortcode}}_project_healthscan_gts_cm_{{item | lower}}_{{gcm_prj_version}}"
+  register: result
+  until: "result.stdout.find('status: successful') != -1"
+  retries: 10
+  delay: 10
+  loop: "{{ projects_to_create | unique }}"
+  tags:
+  - config
+
+- name: "Step 5: Create GCM Scan Job Templates"
+  shell: tower-cli job_template create --name {{blueid_shortcode}}_jobtemplate_healthscan_scan_{{item.name | replace('-','_') | lower}}_{{gcm_prj_version}} --job-type run --project {{blueid_shortcode}}_project_healthscan_gts_cm_{{item.project | lower}}_{{gcm_prj_version}} --playbook GCM-Scan-{{item.name}}.yml --ask-inventory-on-launch true --ask-credential-on-launch true --ask-limit-on-launch true --allow-simultaneous true --use-fact-cache true --survey-spec @{{survey_files_home}}/Survey/Scan-Survey-{{item.name}}.json --survey-enabled true
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects
+  tags:
+    - config
+
+- name: "Step 6: Delete survey files"
+  file:
+    path: "{{survey_files_home}}/Survey"
+    state: absent

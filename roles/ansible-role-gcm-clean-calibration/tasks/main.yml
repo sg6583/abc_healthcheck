@@ -1,0 +1,92 @@
+---
+- name: "Step 2: Connect to Tower Server..."
+  block:
+    - name: "Step 2: Set Tower Server Host..."
+      shell: "tower-cli config host {{tower_host}} &> /dev/null; tower-cli config host"
+      failed_when: false
+      changed_when: false
+      register: tower_host_config
+
+    - name: "Step 2: Set Tower Server USER..."
+      shell: "tower-cli config username {{tower_user}} &> /dev/null; tower-cli config username"
+      failed_when: false
+      changed_when: false
+      register: tower_user_config
+
+    - name: "Step 2: Set Tower Server PWD..."
+      shell: "tower-cli config password {{tower_user_pwd}}"
+      failed_when: false
+      changed_when: false
+      no_log: true
+
+    - name: "Step 2: Set Tower Server SSL..."
+      shell: "tower-cli config verify_ssl {{verify_ssl}} &> /dev/null; tower-cli config verify_ssl"
+      failed_when: false
+      changed_when: false
+      register: tower_ssl_config
+      
+    - name: "Step 2: Set Tower output format to yaml..."
+      shell: "tower-cli config format yaml"
+      failed_when: false
+      changed_when: false
+  tags:
+    - config
+
+- debug:
+    msg:
+      - "{{ tower_host_config.stdout }}"
+      - "{{ tower_user_config.stdout }}"
+      - "{{ tower_ssl_config.stdout }}"
+
+- name: "Set variables"
+  set_fact:
+    gcm_prj_version: "{{ gcm_version | replace('.','') }}"
+
+- name: "Include vars of policies_config.yaml into the 'policies_config' variable."
+  include_vars:
+    file: policies_config.yml
+    name: policies_config
+
+
+- name: "Delete GCM Calibration Job Templates"
+  shell: tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_calibration_{{item.name | replace('-','_') | lower}}_{{gcm_prj_version}}
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects and item.name != 'Windows-OS'
+  tags:
+    - config
+
+- name: "Delete GCM Windows Calibration Job Templates"
+  shell: tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_calibration_{{item | replace('-','_') | lower}}_{{gcm_prj_version}}
+  loop: "{{ gcm_win_policies }}"
+  when: "'Windows-OS' in gcm_projects"
+  tags:
+    - config
+
+- name: "Collect Instaled GCM Templates"
+  shell: tower-cli job_template list -a  
+  register: templates_raw
+  tags:
+    - config
+
+- name: "Parse tower-cli job_template list command output"
+  set_fact:
+    templates: "{{ templates_raw.stdout | from_yaml }}"
+
+- name: "Collect Instaled Template names"
+  set_fact:
+    templates_instaled: "{{ templates_instaled|default([]) + [item.name]}}"
+  loop: "{{ templates.results }}"
+  tags:
+    - config
+
+- name: "Collect installed calibration templates"
+  set_fact:
+    calibration_templates_count: "{{ templates_instaled | select('match', '.*_calibration_.*') | list | length }}"
+  tags:
+    - config
+
+- name: "Delete GCM Calibration project"
+  shell: tower-cli project delete --name {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_calibration_project|lower}}_{{gcm_prj_version}} 
+  when: calibration_templates_count | int == 0
+  tags:
+    - config

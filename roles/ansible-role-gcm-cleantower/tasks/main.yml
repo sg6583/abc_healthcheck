@@ -1,0 +1,113 @@
+---
+- name: "Step 2: Connect to Tower Server..."
+  block:
+    - name: "Step 2: Set Tower Server Host..."
+      shell: "tower-cli config host {{tower_host}} &> /dev/null; tower-cli config host"
+      failed_when: false
+      changed_when: false
+      register: tower_host_config
+
+    - name: "Step 2: Set Tower Server USER..."
+      shell: "tower-cli config username {{tower_user}} &> /dev/null; tower-cli config username"
+      failed_when: false
+      changed_when: false
+      register: tower_user_config
+
+    - name: "Step 2: Set Tower Server PWD..."
+      shell: "tower-cli config password {{tower_user_pwd}}"
+      failed_when: false
+      changed_when: false
+      no_log: true
+
+    - name: "Step 2: Set Tower Server SSL..."
+      shell: "tower-cli config verify_ssl {{verify_ssl}} &> /dev/null; tower-cli config verify_ssl"
+      failed_when: false
+      changed_when: false
+      register: tower_ssl_config
+      
+    - name: "Step 2: Set Tower output format to yaml..."
+      shell: "tower-cli config format yaml"
+      failed_when: false
+      changed_when: false
+  tags:
+    - config
+
+- debug:
+    msg:
+      - "{{ tower_host_config.stdout }}"
+      - "{{ tower_user_config.stdout }}"
+      - "{{ tower_ssl_config.stdout }}"
+
+- name: "Set variables"
+  set_fact:
+    gcm_prj_version: "{{ gcm_version | replace('.','') }}"
+
+- name: "Include vars of policies_config.yaml into the 'policies_config' variable."
+  include_vars:
+    file: policies_config.yml
+    name: policies_config
+
+- name:  "Delete GCM Support Content"
+  block: 
+  - name: "Delete GCM Support Projects"
+    shell: tower-cli project delete --name {{blueid_shortcode}}_project_healthscan_gts_cm_{{gcm_support_project | lower}}_{{gcm_prj_version}} 
+    tags:
+      - config
+
+  - name: "Delete GCM Prepare and Clean Job Templates"
+    shell: |
+      tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_prepare_unix_{{gcm_prj_version}} 
+      tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_clean_unix_{{gcm_prj_version}} 
+      tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_restore_unix_{{gcm_prj_version}} 
+      tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_prepare_windows_{{gcm_prj_version}}
+      tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_clean_windows_{{gcm_prj_version}}
+      tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_restore_windows_{{gcm_prj_version}}
+    tags:
+      - config
+  when: gcm_support_project in gcm_projects
+
+- name: "Delete GCM Scan Job Templates"
+  shell: tower-cli job_template delete --name {{blueid_shortcode}}_jobtemplate_healthscan_scan_{{item.name | replace('-','_') | lower}}_{{gcm_prj_version}}
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects
+  tags:
+    - config
+
+- name: "Collect project do delete"
+  set_fact:
+    projects_to_delete: "{{ projects_to_delete|default([]) + [item.project]}}"
+  loop: "{{ policies_config.policies }}"
+  when: item.name in gcm_projects
+  tags:
+    - config
+
+- name: "Collect Instaled GCM Templates"
+  shell: tower-cli job_template list -a  
+  register: templates_raw
+  tags:
+    - config
+
+- name: "Parse tower-cli job_template list command output"
+  set_fact:
+    templates: "{{ templates_raw.stdout | from_yaml }}"
+
+- name: "Collect Instaled Template names"
+  set_fact:
+    templates_instaled: "{{ templates_instaled|default([]) + [item.name | regex_replace('.*_scan_([\\d\\w_]+_(?:unix|os|windows))_' + gcm_prj_version + '.*','\\1')]}}"
+  loop: "{{ templates.results }}"
+  tags:
+    - config
+
+- name: "Collect project to save"
+  set_fact:
+    projects_to_save: "{{ projects_to_save|default([]) + [item.project]}}"
+  loop: "{{ policies_config.policies }}"
+  when: (item.name | replace('-','_') | lower) in templates_instaled
+  tags:
+    - config
+
+- name: "Delete GCM Projects"
+  shell: tower-cli project delete --name {{blueid_shortcode}}_project_healthscan_gts_cm_{{item|lower}}_{{gcm_prj_version}} 
+  loop: "{{ projects_to_delete | unique | difference(projects_to_save | unique) }}"
+  tags:
+    - config
